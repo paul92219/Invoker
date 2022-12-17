@@ -1,0 +1,3 @@
+FireForge Q E 30
+LightingForge W  - 15
+FrozenForge E Q 10

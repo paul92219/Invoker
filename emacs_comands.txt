@@ -1,0 +1,56 @@
+----------------------------------------------
+REFERENCE GUIDE FOR CASEY'S .EMACS KEYBINDINGS
+----------------------------------------------
+
+TAB                cycles through completions for a word
+
+ESC + X            M-x
+CTRL + G           Quit from minibuffer.
+
+ALT + F            Load file in the current window.
+ALT + SHIFT + F    Load file in the other window.
+
+ALT + S            Save file in the current window.
+ALT + M            Looks for and executes a build.bat.
+ALT + N            Go to the next error after a compile.
+ALT + SHIFT + N    Go to the previous error after a compile.
+
+ALT + R            Revert buffer.
+ALT + B            Switch to buffer in the current window.
+ALT + SHIFT + B    Switch to buffer in the other window.
+ALT + W            Switch to the other window.
+
+ALT + C            Toggles between H file and CPP file in current window.
+ALT + SHIFT + C    Toggles between H file and CPP file in other window.
+
+ALT + K            Kills a buffer.
+
+CTRL + ARROWS      Move cursor by larger increments(word, whitespace).
+
+CTRL + SPACE       Sets the mark.
+CTRL + TAB         Reindent block.
+ALT + SHIFT + ;    Pops back to the previous mark.
+
+CTRL + Q           Copies the block.
+CTRL + F           Pastes the block.
+CTRL + W           Cut the block.
+ALT + U            Undo.
+
+ALT + J            Jump to a function by name.
+
+CTRL + S           Start incremental search.
+CTRL + S           Moves to next occurrence.
+CTRL + R           Moves to previous occurrence.
+
+ALT + O            Query replace.
+ALT + L            Replace inside block.
+
+ALT + [            Begin recording keyboard macro.
+ALT + ]            End recording keyboard macro.
+ALT + '            Replay keyboard macro.
+
+ALT + .            Reflow a comment.
+
+alt + G            Go to line number.
+
+-------------------------------------------------------------------------------------------------------
