@@ -6,9 +6,6 @@
    $Notice: (C) Copyright 2014 by Molly Rocket, Inc. All Rights Reserved. $
    ======================================================================== */
 #include <stdint.h>
-#include <iostream>
-#include <fstream>
-using namespace std;
 
 #define internal static
 #define local_persist static
@@ -28,36 +25,14 @@ typedef uint64_t uint64;
 typedef float real32;
 typedef double real64;
 
-#include "invokergame.h" 
-#include "win32_readingfiles.cpp" 
-#include "computing.cpp"
 #include <windows.h>
-#include <time.h>
 
 #include "win32_invokergame.h"
 
 // TODO(casey): This is a global now
 global_variable bool32 GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackBuffer;
-global_variable bool32 draw = false;
-//global_variable bool32 CombinationDone = false;
-
-global_variable spell SkillBuffer[10] = {}; 
-global_variable enemy EnemyBuffer[3] = {};
-
-char Spells[10][4][4] =
-{ {"QQQ", {}, {}, {3, 0, 0}},
-  {"QQW", "QWQ", "WQQ", {2, 1, 0}},
-  {"QQE", "QEQ", "EQQ", {2, 0, 1}},
-  {"WWW", {}, {}, {0, 3, 0}},
-  {"WWQ", "WQW", "QWW", {1, 2, 0}},
-  {"WWE", "WEW", "EWW", {0, 2, 1}},
-  {"EEE", {}, {}, {0, 0, 3}},
-  {"EEQ", "EQE", "QEE", {1, 0, 2}},
-  {"EEW", "EWE", "WEE", {0, 1, 2}},
-  {"QWE", "WEQ", "EQW", {1, 1, 1}}
-};
-
+/*
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window)
 {
@@ -70,7 +45,7 @@ Win32GetWindowDimension(HWND Window)
 
     return(Result);
 }
-/*
+
   internal void
   RenderWeirdGradient(win32_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
   {
@@ -141,96 +116,6 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
   }
 */
 
-internal void
-Win32SpellComputing()
-{
-    bool32 Equlity = false;
-    
-    for(int i = 0; i < 10; i++)
-    {
-        for(int j = 0; j < 3; j++)
-        {
-            if(!strcmp(Spells[i][j], SpellConfig.Spell))
-            {
-                Equlity = true;
-                break;
-            }
-        }
-        if(Equlity)
-        {
-            SpellConfig.NumberOfSymbolsInSpell[0] = Spells[i][3][0];
-            SpellConfig.NumberOfSymbolsInSpell[1] = Spells[i][3][1];
-            SpellConfig.NumberOfSymbolsInSpell[2] = Spells[i][3][2];
-            SpellConfig.SpellIndex = i;
-            break;
-        }
-    }
-}
-
-internal void
-DamageComputing(enemy *EnemyBuffer, spell *SkillBuffer)
-{
-    SpellConfig.Damage = SkillBuffer->Damage;
-    
-    if(EnemyBuffer->Susceptibility == 'Q')
-    {
-        SpellConfig.Damage += SpellConfig.NumberOfSymbolsInSpell[0] * 2;
-    }
-    else if(EnemyBuffer->Susceptibility == 'W')
-    {
-        SpellConfig.Damage += SpellConfig.NumberOfSymbolsInSpell[1] * 2;
-    }
-    else if(EnemyBuffer->Susceptibility == 'E')
-    {
-        SpellConfig.Damage += SpellConfig.NumberOfSymbolsInSpell[2] * 2;
-    }
-
-    if(EnemyBuffer->Immunity == 'Q')
-    {
-        SpellConfig.Damage -= SpellConfig.NumberOfSymbolsInSpell[0] * 2;
-    }
-    else if(EnemyBuffer->Immunity == 'W')
-    {
-        SpellConfig.Damage -= SpellConfig.NumberOfSymbolsInSpell[1] * 2;
-    }
-    else if(EnemyBuffer->Immunity == 'E')
-    {
-        SpellConfig.Damage -= SpellConfig.NumberOfSymbolsInSpell[2] * 2;
-    }
-    else if(EnemyBuffer->Immunity == '-')
-    {
-    }
-    
-    EnemyConfig.HP -= SpellConfig.Damage;
-}
-
-
-internal void
-Win32PaintGameInWindow(HDC DeviceContext, HWND Window,
-                       spell *SkillBuffer, enemy *EnemyBuffer)
-{
-    if(DrawConfig.DrawingCounter == 1)
-    {
-        sprintf(DrawConfig.Buffer, "Your enemy is: %s                    ",
-                EnemyBuffer->Name);
-        TextOut(DeviceContext, 10, 30, DrawConfig.Buffer, sizeof(DrawConfig.Buffer));
-    }
-    else if(DrawConfig.DrawingCounter == 2)
-    {
-        sprintf(DrawConfig.Buffer, "You Killed %s by: %s                    ",
-                EnemyBuffer->Name, SkillBuffer->Name);
-        
-        TextOut(DeviceContext, 10, 70, DrawConfig.Buffer, sizeof(DrawConfig.Buffer));
-    }
-    else if(DrawConfig.DrawingCounter == 3)
-    {
-        sprintf(DrawConfig.Buffer, "You deal %d damage                    ", SpellConfig.Damage);
-        
-        TextOut(DeviceContext, 10, 50, DrawConfig.Buffer, sizeof(DrawConfig.Buffer));
-    }    
-               
-}
-
 internal LRESULT CALLBACK
 Win32MainWindowCallBack(HWND Window,
                         UINT Message,
@@ -264,18 +149,6 @@ Win32MainWindowCallBack(HWND Window,
         case WM_KEYDOWN:
         case WM_KEYUP:
         {
-            keyboardinput Input = {};
-            Input.VKCode = (uint32)WParam;
-            Input.WasDown = ((LParam & (1 << 30)) != 0);
-            Input.IsDown = ((LParam & (1 << 31)) == 0);
-
-            if(Input.WasDown)
-            {
-                if(UsersSkill(&Input))
-                {
-                    Win32SpellComputing();
-                }
-            }
 
         } break;
         
@@ -283,25 +156,6 @@ Win32MainWindowCallBack(HWND Window,
         {   
             
             OutputDebugStringA("WM_PAINT\n");
-            PAINTSTRUCT Paint;
-            HDC DeviceContext = BeginPaint(Window, &Paint);
-
-            //InvalidateRect(Window, 0, TRUE);
-            TextOut(DeviceContext, 10, 10, "Srart Game", 10);
-
-            if(EnemyConfig.HP <= 0)
-            {
-                DrawConfig.DrawingCounter = 2;
-                Win32PaintGameInWindow(DeviceContext, Window,
-                                       &SkillBuffer[SpellConfig.SpellIndex],
-                                       &EnemyBuffer[EnemyConfig.EnemyIndex]);                           
-            }
-
-            Win32PaintGameInWindow(DeviceContext, Window,
-                                   &SkillBuffer[SpellConfig.SpellIndex],
-                                   &EnemyBuffer[EnemyConfig.EnemyIndex]);           
-
-            EndPaint(Window, &Paint);
 
         } break;
 
@@ -351,31 +205,8 @@ WinMain(HINSTANCE Instance,
                 0, 
                 Instance, 
                 0);
-        /*
-        HWND WindowButton = CreateWindowEx(
-            0,  
-            "BUTTON",  // Predefined class; Unicode assumed 
-            "OK",      // Button text 
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-            10,         // x position 
-            10,         // y position 
-            100,        // Button width
-            100,        // Button height
-            WindowHandle,     // Parent window
-            0,       // No menu.
-            Instance, 
-            0);      // Pointer not needed.
-        */
         
         GlobalRunning = true;
-
-        // NOTE(handy): Reading files here        
-        readingfiles Pointers;
-        
-        Win32ReadingSkillsFile(SkillBuffer, &Pointers);
-        Win32ReadingEnemiesFile(EnemyBuffer, &Pointers);
-        
-        srand((unsigned) time(0));
         
         if(Window)
         {
@@ -384,25 +215,6 @@ WinMain(HINSTANCE Instance,
             while(GlobalRunning)
             {
                 MSG Message;
-                
-                if(EnemyConfig.HP <= 0)
-                {
-                    EnemyConfig.EnemyIndex = rand() % 3;
-                    
-                    EnemyConfig.HP = EnemyBuffer[EnemyConfig.EnemyIndex].HP;
-
-                    DrawConfig.DrawingCounter = 1;
-                    RedrawWindow(Window, 0, 0, RDW_INVALIDATE);
-                }
-                
-                if(SpellConfig.CombinationDone)
-                {
-                    SpellConfig.CombinationDone = false;
-                    DamageComputing(&EnemyBuffer[EnemyConfig.EnemyIndex],
-                                    &SkillBuffer[SpellConfig.SpellIndex]);
-                    DrawConfig.DrawingCounter = 3;
-                    RedrawWindow(Window, 0, 0, RDW_INVALIDATE);                    
-                }
                 
                 while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
                 {
