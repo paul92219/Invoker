@@ -265,7 +265,7 @@ Win32MainWindowCallBack(HWND Window,
         case WM_KEYUP:
         {
             keyboardinput Input = {};
-            Input.VKCode = WParam;
+            Input.VKCode = (uint32)WParam;
             Input.WasDown = ((LParam & (1 << 30)) != 0);
             Input.IsDown = ((LParam & (1 << 31)) == 0);
 
