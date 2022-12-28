@@ -32,7 +32,7 @@ typedef double real64;
 // TODO(casey): This is a global now
 global_variable bool32 GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackBuffer;
-/*
+
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window)
 {
@@ -45,7 +45,7 @@ Win32GetWindowDimension(HWND Window)
 
     return(Result);
 }
-
+/*
   internal void
   RenderWeirdGradient(win32_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
   {
@@ -67,6 +67,7 @@ Win32GetWindowDimension(HWND Window)
   }
   }
 */
+
 internal void
 Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
 {
@@ -97,24 +98,24 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
     Buffer->Pitch = Width * BytesPerPixel;
 
 }    
-/*
-  internal void
-  Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
-  HDC DeviceContext, int WindowWidth, int WindowHeight)
-  {
-  // TODO(casey): Aspect ratio correction
-  StretchDIBits(DeviceContext,
+
+internal void
+Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
+                           HDC DeviceContext, int WindowWidth, int WindowHeight)
+{
+    // TODO(casey): Aspect ratio correction
+    StretchDIBits(DeviceContext,
                   
-  //X, Y, Width, Height,
-  //X, Y, Width, Height,
+                  //X, Y, Width, Height,
+                  //X, Y, Width, Height,
                   
-  0, 0, WindowWidth, WindowHeight,
-  0, 0, Buffer->Width, Buffer->Height,
-  Buffer->Memory,
-  &Buffer->Info,
-  DIB_RGB_COLORS, SRCCOPY);
-  }
-*/
+                  0, 0, WindowWidth, WindowHeight,
+                  0, 0, Buffer->Width, Buffer->Height,
+                  Buffer->Memory,
+                  &Buffer->Info,
+                  DIB_RGB_COLORS, SRCCOPY);
+}
+
 
 internal LRESULT CALLBACK
 Win32MainWindowCallBack(HWND Window,
@@ -156,6 +157,13 @@ Win32MainWindowCallBack(HWND Window,
         {   
             
             OutputDebugStringA("WM_PAINT\n");
+
+            PAINTSTRUCT Paint;
+            HDC DeviceContext = BeginPaint(Window, &Paint);
+            win32_window_dimension Dimension = Win32GetWindowDimension(Window);
+            Win32DisplayBufferInWindow(&GlobalBackBuffer, DeviceContext,
+                                       Dimension.Width, Dimension.Height);
+            EndPaint(Window, &Paint);
 
         } break;
 
