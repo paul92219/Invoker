@@ -57,6 +57,60 @@ struct game_memory
 };
 
 
+struct game_button_state
+{
+    int HalfTransitionCount;
+    bool32 EndedDown;
+};
+
+struct game_controller_input
+{
+    bool32 IsConnected;
+    bool32 IsAnalog;
+    real32 StickAverageX;
+    real32 StickAverageY;
+    
+    union
+    {
+        game_button_state Buttons[12];
+        struct
+        {
+            game_button_state MoveUp;
+            game_button_state MoveDown;
+            game_button_state MoveLeft;
+            game_button_state MoveRight;
+
+            game_button_state ActionUp;
+            game_button_state ActionDown;
+            game_button_state ActionLeft;
+            game_button_state ActionRight;
+
+            game_button_state LeftShoulder;
+            game_button_state RightShoulder;
+
+            game_button_state Back;
+            game_button_state Start;
+
+            // NOTE(casey): All buttons must be added above this line
+            
+            game_button_state Terminator;
+        };
+    };
+};
+
+struct game_input
+{
+    // TODO(casey): Insert clock values here.
+    game_controller_input Controllers[5];
+};
+
+inline game_controller_input *GetController(game_input *Input, int unsigned ControllerIndex)
+{
+    Assert(ControllerIndex < ArrayCount(Input->Controllers));
+    game_controller_input *Result = &Input->Controllers[ControllerIndex];
+    return(Result);
+}
+
 internal void GameUpdateAndRender(game_memory *Memory);
 
 //

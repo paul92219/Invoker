@@ -161,6 +161,110 @@ Win32MainWindowCallBack(HWND Window,
     return(Result);
 }
 
+
+internal void
+Win32ProcessKeyboardMessage(game_button_state *NewState, bool32 IsDown)
+{
+    Assert(NewState->EndedDown != IsDown);
+    NewState->EndedDown = IsDown;
+    ++NewState->HalfTransitionCount;
+}
+
+internal void
+Win32ProcessPendingMessages(game_controller_input *KeyboardController)
+{
+    MSG Message;
+                        
+    while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
+    {
+        switch(Message.message)
+        {
+            case WM_QUIT:
+            {
+                GlobalRunning = false;                
+            } break;
+            
+            case WM_SYSKEYDOWN:
+            case WM_SYSKEYUP:
+            case WM_KEYDOWN:
+            case WM_KEYUP:
+            {                        
+                uint32 VKCode = (uint32)Message.wParam;
+                bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+                bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+
+                if(WasDown != IsDown)
+                {
+                    if(VKCode == 'W')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveUp, IsDown);
+                    }
+                    else if(VKCode == 'A')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveLeft, IsDown);
+                    }
+                    else if(VKCode == 'S')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveDown, IsDown);
+                    }
+                    else if(VKCode == 'D')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->MoveRight, IsDown);
+                    }
+                    else if(VKCode == 'Q')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->LeftShoulder, IsDown);
+                    }
+                    else if(VKCode == 'E')
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->RightShoulder, IsDown);
+                    }
+                    else if(VKCode == VK_UP)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionUp, IsDown);
+
+                    }
+                    else if(VKCode == VK_LEFT)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionLeft, IsDown);
+
+                    }
+                    else if(VKCode == VK_RIGHT)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionRight, IsDown);
+
+                    }
+                    else if(VKCode == VK_DOWN)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->ActionDown, IsDown);
+                    }
+                    else if(VKCode == VK_ESCAPE)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
+                    }
+                    else if(VKCode == VK_SPACE)
+                    {
+                        Win32ProcessKeyboardMessage(&KeyboardController->Back, IsDown);
+                    }
+                }
+
+                bool32  AltKeyWasDown = (Message.lParam & (1 << 29));
+                if((VKCode == VK_F4) && AltKeyWasDown)
+                {
+                    GlobalRunning = false;
+                }
+                    
+            } break;
+
+            default:
+            {
+                TranslateMessage(&Message);
+                DispatchMessageA(&Message);
+            } break;
+        }
+    }
+
+}
                     
 inline LARGE_INTEGER
 Win32GetWallClock(void)
@@ -184,7 +288,6 @@ WinMain(HINSTANCE Instance,
         LPSTR CommandLine,
         int ShowCode)
 {
-
     LARGE_INTEGER PerfCountFrequencyResult;
     QueryPerformanceFrequency(&PerfCountFrequencyResult);
     GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
@@ -251,26 +354,34 @@ WinMain(HINSTANCE Instance,
 
             if(GameMemory.PermanentStorage && GameMemory.TransientStorage)
             {
+                game_input Input[2] = {};
+                game_input *NewInput = &Input[0];
+                game_input *OldInput = &Input[1];
+
                 LARGE_INTEGER LastCounter = Win32GetWallClock();
 
                 uint64 LastCycleCount = __rdtsc();
 
                 while(GlobalRunning)
                 {
-                    MSG Message;
-                
-                    while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
-                    {
-                        if(Message.message == WM_QUIT)
-                        {
-                            GlobalRunning = false;
-                        }
+                    // TODO(casey): Zeroing macro
+                    // TODO(casey): We can't zero everything because the up/down state will be wrong!
+                    game_controller_input *OldKeyboardController = GetController(OldInput, 0);  
+                    game_controller_input *NewKeyboardController = GetController(NewInput, 0);        
+                    *NewKeyboardController = {};
+                    NewKeyboardController->IsConnected = true;
                     
-                        TranslateMessage(&Message);
-                        DispatchMessageA(&Message);
+                    for(int ButtonIndex = 0;
+                        ButtonIndex < ArrayCount(NewKeyboardController->Buttons);
+                        ++ButtonIndex)
+                    {
+                        NewKeyboardController->Buttons[ButtonIndex].EndedDown =
+                            OldKeyboardController->Buttons[ButtonIndex].EndedDown;
                     }
+                    
+                    Win32ProcessPendingMessages(NewKeyboardController);
 
-                    GameUpdateAndRender(&GameMemory);
+                    GameUpdateAndRender(&GameMemory, Input);
                                         
                     LARGE_INTEGER WorkCounter = Win32GetWallClock();
                     real32 WorkSecondsElapsed = Win32GetSecondsElapsed(LastCounter, WorkCounter);
@@ -317,6 +428,10 @@ WinMain(HINSTANCE Instance,
                     LARGE_INTEGER EndCounter = Win32GetWallClock();
                     real32 MSPerFrame = 1000.0f * Win32GetSecondsElapsed(LastCounter, EndCounter);
                     LastCounter = EndCounter;
+
+                    game_input *Temp = NewInput;
+                    NewInput = OldInput;
+                    OldInput = Temp;
                                         
                     uint64 EndCycleCount = __rdtsc();
                     uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
